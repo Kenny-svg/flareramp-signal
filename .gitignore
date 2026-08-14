@@ -22,3 +22,4 @@ executor/.DS_Store
 executor/.env
 web/.env
 web/node_modules/
+docs/
