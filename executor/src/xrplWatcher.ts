@@ -26,7 +26,7 @@ export async function watchXrplAddress(
   onInstruction: (instruction: IncomingInstruction) => void | Promise<void>,
   onHandlerError: (error: unknown) => void = () => {},
 ): Promise<Client> {
-  const client = new Client(wssUrl);
+  const client = new Client(wssUrl, { connectionTimeout: 20_000 });
   await client.connect();
   await client.request({ command: "subscribe", accounts: [address] });
 

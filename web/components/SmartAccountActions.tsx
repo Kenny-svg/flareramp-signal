@@ -145,7 +145,10 @@ export function SmartAccountActions() {
     }
     const next = data as SigningStatus;
     setStatus(next);
-    if (next.stage === "signed" && next.transactionId) {
+    if (
+      (next.stage === "signed" || next.stage === "submitting") &&
+      next.transactionId
+    ) {
       setTransactionId(next.transactionId);
     } else if (next.stage !== "awaiting" && next.stage !== "submitting") {
       localStorage.removeItem(STORAGE_KEY);

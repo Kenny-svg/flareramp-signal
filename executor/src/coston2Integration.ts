@@ -291,7 +291,8 @@ async function prepare(): Promise<void> {
 
   const xrpl = new Client(
     process.env.XRPL_WSS_URL ??
-      "wss://s.altnet.rippletest.net:51233",
+      "wss://testnet.xrpl-labs.com",
+    { connectionTimeout: 20_000 },
   );
   await xrpl.connect();
   try {

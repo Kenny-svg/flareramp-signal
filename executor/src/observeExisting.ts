@@ -33,7 +33,7 @@ async function main() {
   const store = new JsonFileTransactionStore(config.transactionStorePath);
   await store.initialize();
 
-  const xrpl = new Client(config.xrplWssUrl);
+  const xrpl = new Client(config.xrplWssUrl, { connectionTimeout: 20_000 });
   await xrpl.connect();
   try {
     const response = await xrpl.request({

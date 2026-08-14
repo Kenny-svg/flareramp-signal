@@ -47,7 +47,7 @@ export function getWebServerConfig(): WebServerConfig {
     xamanApiSecret: required("XAMAN_API_SECRET"),
     xrplWssUrl: url(
       "XRPL_WSS_URL",
-      "wss://s.altnet.rippletest.net:51233",
+      "wss://testnet.xrpl-labs.com",
     ),
   };
   return cached;

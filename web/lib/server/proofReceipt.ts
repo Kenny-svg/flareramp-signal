@@ -91,7 +91,9 @@ async function readXrplEvidence(
   transactionId: string,
 ): Promise<XrplEvidence> {
   const { Client } = await import("xrpl");
-  const client = new Client(getWebServerConfig().xrplWssUrl);
+  const client = new Client(getWebServerConfig().xrplWssUrl, {
+    connectionTimeout: 20_000,
+  });
   await withTimeout(client.connect(), 10_000, "XRPL connection");
   try {
     const [transaction, ledger] = await withTimeout(Promise.all([

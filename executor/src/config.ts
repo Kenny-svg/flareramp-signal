@@ -2,7 +2,7 @@ import { isHex, size, type Hex } from "viem";
 
 export const DEFAULT_COSTON2_RPC_URL =
   "https://coston2-api.flare.network/ext/C/rpc";
-export const DEFAULT_XRPL_WSS_URL = "wss://s.altnet.rippletest.net:51233";
+export const DEFAULT_XRPL_WSS_URL = "wss://testnet.xrpl-labs.com";
 
 export interface ExecutorConfig {
   coston2RpcUrl: string;

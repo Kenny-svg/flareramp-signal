@@ -217,7 +217,14 @@ export function verifySubmittedPayment(
       ? transaction.meta.TransactionResult
       : undefined;
   if (!transaction.validated || result !== "tesSUCCESS") {
-    throw new Error("XRPL payment is not validated with tesSUCCESS");
+    // Caller should treat not-yet-validated txs as pending; definitive
+    // ledger failures (tec*/tef*) surface once validated !== tesSUCCESS.
+    if (!transaction.validated || result === undefined) {
+      throw new PaymentValidationPendingError();
+    }
+    throw new Error(
+      `XRPL payment failed on ledger (${result ?? "unknown result"})`,
+    );
   }
   const expectedDestination = destinationOf(expected);
   if (
@@ -237,6 +244,13 @@ export function verifySubmittedPayment(
     throw new Error(
       "Smart Account instruction payments must not include a destination tag",
     );
+  }
+}
+
+export class PaymentValidationPendingError extends Error {
+  constructor() {
+    super("Signed payment is waiting for XRPL validation");
+    this.name = "PaymentValidationPendingError";
   }
 }
 
@@ -358,6 +372,15 @@ export function createXamanDirectMintService(
           };
         }
       } catch (error) {
+        if (error instanceof PaymentValidationPendingError) {
+          return {
+            stage: "submitting",
+            payloadId,
+            transactionId,
+            signer,
+            message: error.message,
+          };
+        }
         return {
           stage: "malformed",
           payloadId,
@@ -405,7 +428,8 @@ export function createXamanDirectMintDependencies(
       const { Client } = await import("xrpl");
       const client = new Client(
         config.xrplWssUrl ??
-          "wss://s.altnet.rippletest.net:51233",
+          "wss://testnet.xrpl-labs.com",
+        { connectionTimeout: 20_000 },
       );
       await client.connect();
       try {
@@ -428,6 +452,11 @@ export function createXamanDirectMintDependencies(
         }
         verifySubmittedPayment(response, expected);
         return "validated";
+      } catch (error) {
+        if (error instanceof PaymentValidationPendingError) {
+          return "pending";
+        }
+        throw error;
       } finally {
         await client.disconnect();
       }

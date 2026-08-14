@@ -201,7 +201,10 @@ export function DirectMintSigning() {
     }
     const nextStatus = data as SigningStatus;
     setStatus(nextStatus);
-    if (nextStatus.stage === "signed" && nextStatus.transactionId) {
+    if (
+      (nextStatus.stage === "signed" || nextStatus.stage === "submitting") &&
+      nextStatus.transactionId
+    ) {
       setTransactionId(nextStatus.transactionId);
     } else if (
       nextStatus.stage !== "awaiting" &&
