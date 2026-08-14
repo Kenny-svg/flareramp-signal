@@ -1,7 +1,7 @@
 import type { Address, Hex } from "viem";
 import {
   DirectMintingError,
-  truncatePublicErrorMessage,
+  publicExecutorErrorMessage,
   type DirectMintingSettlement,
   type SubmittedDirectMinting,
 } from "./flareExecutor";
@@ -97,7 +97,11 @@ function errorDetails(error: unknown): {
     );
     return {
       code: error.code,
-      message: truncatePublicErrorMessage(error.message),
+      message: publicExecutorErrorMessage({
+        code: error.code,
+        message: error.message,
+        cause: error.cause,
+      }),
       retryable:
         error.code === "SIMULATION_FAILED"
           ? !simulationPermanent
@@ -107,7 +111,11 @@ function errorDetails(error: unknown): {
   if (error instanceof FdcProofError) {
     return {
       code: error.code,
-      message: truncatePublicErrorMessage(error.message),
+      message: publicExecutorErrorMessage({
+        code: error.code,
+        message: error.message,
+        cause: error.cause,
+      }),
       retryable: ![
         "INVALID_INPUT",
         "MALFORMED_PROOF",
@@ -117,9 +125,11 @@ function errorDetails(error: unknown): {
   }
   return {
     code: "UNEXPECTED_ERROR",
-    message: truncatePublicErrorMessage(
-      error instanceof Error ? error.message : "Unknown executor error",
-    ),
+    message: publicExecutorErrorMessage({
+      code: "UNEXPECTED_ERROR",
+      message: error instanceof Error ? error.message : "Unknown executor error",
+      cause: error instanceof Error ? error.cause : undefined,
+    }),
     retryable: true,
   };
 }

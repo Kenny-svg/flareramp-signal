@@ -12,7 +12,7 @@ import {
   InstructionExecutorError,
   type InstructionSettlement,
 } from "./instructionExecutor";
-import { truncatePublicErrorMessage } from "./flareExecutor";
+import { publicExecutorErrorMessage } from "./flareExecutor";
 import type { StructuredLogger } from "./logger";
 import {
   type TransactionJob,
@@ -95,14 +95,22 @@ function errorDetails(error: unknown): {
     ]);
     return {
       code: error.code,
-      message: truncatePublicErrorMessage(error.message),
+      message: publicExecutorErrorMessage({
+        code: error.code,
+        message: error.message,
+        cause: error.cause,
+      }),
       retryable: !permanent.has(error.code),
     };
   }
   if (error instanceof FdcProofError) {
     return {
       code: error.code,
-      message: truncatePublicErrorMessage(error.message),
+      message: publicExecutorErrorMessage({
+        code: error.code,
+        message: error.message,
+        cause: error.cause,
+      }),
       retryable: ![
         "INVALID_INPUT",
         "MALFORMED_PROOF",
@@ -112,9 +120,11 @@ function errorDetails(error: unknown): {
   }
   return {
     code: "UNEXPECTED_ERROR",
-    message: truncatePublicErrorMessage(
-      error instanceof Error ? error.message : "Unknown executor error",
-    ),
+    message: publicExecutorErrorMessage({
+      code: "UNEXPECTED_ERROR",
+      message: error instanceof Error ? error.message : "Unknown executor error",
+      cause: error instanceof Error ? error.cause : undefined,
+    }),
     retryable: true,
   };
 }

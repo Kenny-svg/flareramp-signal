@@ -16,6 +16,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { describe, expect, it, vi } from "vitest";
 import {
   executeDirectMinting,
+  publicExecutorErrorMessage,
   truncatePublicErrorMessage,
   type DirectMintingDependencies,
 } from "./flareExecutor";
@@ -226,10 +227,18 @@ describe("truncatePublicErrorMessage", () => {
 
   it("maps Firelight NoWithdrawalAmount selector", () => {
     const mapped = truncatePublicErrorMessage(
-      'executeInstruction reverted with the following signature: 0x95dece8d',
+      "executeInstruction reverted with the following signature: 0x95dece8d",
     );
     expect(mapped).toContain("NoWithdrawalAmount");
     expect(mapped).toContain("period");
+  });
+
+  it("maps insufficient funds to operator C2FLR guidance", () => {
+    const mapped = truncatePublicErrorMessage(
+      "insufficient funds for gas * price + value",
+    );
+    expect(mapped).toMatch(/C2FLR/i);
+    expect(mapped).toMatch(/faucet|fund/i);
   });
 
   it("collapses whitespace and truncates long dumps", () => {
@@ -238,5 +247,16 @@ describe("truncatePublicErrorMessage", () => {
     expect(truncated.length).toBeLessThanOrEqual(280);
     expect(truncated.endsWith("…")).toBe(true);
     expect(truncated.includes("\n")).toBe(false);
+  });
+});
+
+describe("publicExecutorErrorMessage", () => {
+  it("explains FdcHub submission failures clearly", () => {
+    const message = publicExecutorErrorMessage({
+      code: "SUBMISSION_FAILED",
+      message: "Failed to submit XRPPayment request to FdcHub",
+      cause: new Error("insufficient funds for gas * price + value"),
+    });
+    expect(message).toMatch(/C2FLR/i);
   });
 });

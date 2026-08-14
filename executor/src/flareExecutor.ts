@@ -109,10 +109,54 @@ export function truncatePublicErrorMessage(
   maxLength = MAX_PUBLIC_ERROR_MESSAGE_LENGTH,
 ): string {
   const cleaned = message.replace(/\s+/g, " ").trim();
-  const known = summarizeRevertSignature(cleaned);
+  const known =
+    summarizeOperationalFailure(cleaned) ??
+    summarizeRevertSignature(cleaned);
   const text = known ?? cleaned;
   if (text.length <= maxLength) return text;
   return `${text.slice(0, Math.max(0, maxLength - 1))}…`;
+}
+
+/**
+ * Turn executor error codes + nested viem causes into short operator/user copy.
+ * Used when persisting job.lastError for the web UI.
+ */
+export function publicExecutorErrorMessage(params: {
+  code: string;
+  message: string;
+  cause?: unknown;
+}): string {
+  const causeText = params.cause ? errorDescription(params.cause) : "";
+  const combined = `${params.code} ${params.message} ${causeText}`;
+  const operational = summarizeOperationalFailure(combined);
+  if (operational) {
+    return truncatePublicErrorMessage(operational);
+  }
+  const known =
+    summarizeRevertSignature(causeText) ??
+    summarizeRevertSignature(params.message);
+  if (known) {
+    return truncatePublicErrorMessage(known);
+  }
+  if (/FdcHub|XRPPayment request|Payment request to FdcHub/i.test(params.message)) {
+    return truncatePublicErrorMessage(
+      "Could not submit the FDC attestation on Coston2. The operator wallet may need more C2FLR for the FDC fee and gas — fund it and retry.",
+    );
+  }
+  return truncatePublicErrorMessage(params.message);
+}
+
+function summarizeOperationalFailure(text: string): string | undefined {
+  if (/insufficient funds|exceeds the balance|gas required exceeds/i.test(text)) {
+    return "Operator Coston2 wallet needs more C2FLR (FDC attestation fee + gas). Fund the executor address on the Coston2 faucet, then retry.";
+  }
+  if (/nonce too low|replacement transaction underpriced/i.test(text)) {
+    return "Coston2 transaction nonce conflict — the executor will retry shortly.";
+  }
+  if (/FdcHub transaction reverted/i.test(text)) {
+    return "FDC Hub rejected the attestation request on Coston2. Check operator C2FLR balance and try again.";
+  }
+  return undefined;
 }
 
 function summarizeRevertSignature(text: string): string | undefined {
@@ -122,7 +166,7 @@ function summarizeRevertSignature(text: string): string | undefined {
   return KNOWN_REVERT_SELECTORS[selector];
 }
 
-function errorDescription(error: unknown): string {
+export function errorDescription(error: unknown): string {
   const visited = new Set<unknown>();
   let current: unknown = error;
   let errorName: string | undefined;
@@ -149,6 +193,10 @@ function errorDescription(error: unknown): string {
   }
 
   const raw = shortMessage || errorName || message || "unknown error";
+  const operational = summarizeOperationalFailure(`${raw} ${message ?? ""}`);
+  if (operational) {
+    return truncatePublicErrorMessage(operational);
+  }
   const known = summarizeRevertSignature(raw) ?? summarizeRevertSignature(message ?? "");
   if (known) {
     return truncatePublicErrorMessage(known);

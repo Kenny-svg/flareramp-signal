@@ -5,6 +5,7 @@ import {
   actionLabel,
   type SmartAccountActionKind,
 } from "@/lib/smartAccountActions";
+import { humanizeExecutorError } from "@/lib/executorErrorMessage";
 
 type SigningStage =
   | "awaiting"
@@ -627,10 +628,7 @@ export function SmartAccountActions() {
               role="alert"
               className="mb-4 bg-red-950/20 border border-red-900/50 text-red-400 px-4 py-3 rounded-xl text-sm break-words line-clamp-4"
             >
-              {progress.error.code}:{" "}
-              {progress.error.message.length > 280
-                ? `${progress.error.message.slice(0, 279)}…`
-                : progress.error.message}
+              {humanizeExecutorError(progress.error)}
             </div>
           )}
           {progress?.stage === "instruction_executed" && (
